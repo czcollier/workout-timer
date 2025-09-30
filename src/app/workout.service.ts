@@ -13,9 +13,13 @@ export interface Exercise {
   rest: number;
 }
 interface WorkoutDoc {
-  owner: string;
+  owner: string; // User UID
   exercises: Exercise[];
-  sharedWith: string[];
+  sharedWith: string[]; // Array of User UIDs
+  shareCode?: string; // The user's friendly share code
+}
+interface ShareCodeDoc {
+  userUid: string;
 }
 
 @Injectable({
@@ -30,6 +34,8 @@ export class WorkoutService {
   workoutList = signal<Exercise[]>([]);
   sharedWith = signal<string[]>([]);
   loadedWorkoutOwnerId = signal<string | null>(null);
+  userShareCode = signal<string | null>(null); // To display the user's own share code
+  
   draggedItemIndex = signal<number | null>(null);
   availableVoices = signal<SpeechSynthesisVoice[]>([]);
   selectedVoiceURI = signal<string | null>(null);
@@ -60,6 +66,7 @@ export class WorkoutService {
         this.workoutList.set([]);
         this.sharedWith.set([]);
         this.loadedWorkoutOwnerId.set(null);
+        this.userShareCode.set(null);
       }
       if (!this.authStateCheckedSource.closed) {
         this.authStateCheckedSource.next(true);
@@ -77,6 +84,27 @@ export class WorkoutService {
     this.router.navigate(['/login']);
   }
 
+  async loadWorkoutByShareCode(shareCode: string) {
+    const trimmedCode = shareCode.trim().toUpperCase();
+    if (!trimmedCode) return;
+
+    try {
+      const shareCodeRef = doc(this.firestore, 'shareCodes', trimmedCode);
+      const shareCodeSnap = await getDoc(shareCodeRef);
+
+      if (shareCodeSnap.exists()) {
+        // Corrected: Use bracket notation to access the property.
+        const userUid = shareCodeSnap.data()['userUid'];
+        this.loadWorkout(userUid);
+      } else {
+        alert("Share Code not found.");
+      }
+    } catch (error) {
+      console.error("Error loading workout by share code:", error);
+      alert("Could not load workout.");
+    }
+  }
+
   loadWorkout(ownerId: string) {
     const trimmedId = ownerId.trim();
     if (!trimmedId) return;
@@ -88,31 +116,67 @@ export class WorkoutService {
         this.workoutList.set(data.exercises || []);
         this.sharedWith.set(data.sharedWith || []);
         this.loadedWorkoutOwnerId.set(data.owner);
+        if (this.isOwner()) {
+          this.userShareCode.set(data.shareCode || null);
+        }
       } else if (trimmedId === this.user()?.uid) {
         this.workoutList.set([]);
         this.sharedWith.set([]);
         this.loadedWorkoutOwnerId.set(trimmedId);
+        this.userShareCode.set(null);
       }
     });
   }
+  
+  private generateShareCode(length = 8): string {
+    const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
 
   async saveWorkoutToFirestore() {
-    if (!this.isOwner() || !this.loadedWorkoutOwnerId()) return;
-    const userDocRef = doc(this.firestore, 'workouts', this.loadedWorkoutOwnerId()!);
+    if (!this.isOwner() || !this.user()) return;
+    
+    const userDocRef = doc(this.firestore, 'workouts', this.user()!.uid);
+    let shareCode = this.userShareCode();
+
+    if (!shareCode) {
+        shareCode = this.generateShareCode();
+        this.userShareCode.set(shareCode);
+        const shareCodeRef = doc(this.firestore, 'shareCodes', shareCode);
+        await setDoc(shareCodeRef, { userUid: this.user()!.uid });
+    }
+
     const workoutData: WorkoutDoc = {
       owner: this.user()!.uid,
       exercises: this.workoutList(),
-      sharedWith: Array.from(new Set([...this.sharedWith(), this.user()!.uid]))
+      sharedWith: Array.from(new Set([...this.sharedWith(), this.user()!.uid])),
+      shareCode: shareCode
     };
     await setDoc(userDocRef, workoutData, { merge: true });
   }
 
-  async shareWorkout(friendUid: string) {
-    if (!friendUid || !this.loadedWorkoutOwnerId()) return;
-    const userDocRef = doc(this.firestore, 'workouts', this.loadedWorkoutOwnerId()!);
-    const docSnap = await getDoc(userDocRef);
-    if (!docSnap.exists()) await this.saveWorkoutToFirestore();
-    await updateDoc(userDocRef, { sharedWith: arrayUnion(friendUid) });
+  async shareWorkout(friendShareCode: string) {
+    const trimmedCode = friendShareCode.trim().toUpperCase();
+    if (!trimmedCode || !this.loadedWorkoutOwnerId()) return;
+
+    try {
+        const shareCodeRef = doc(this.firestore, 'shareCodes', trimmedCode);
+        const shareCodeSnap = await getDoc(shareCodeRef);
+
+        if (shareCodeSnap.exists()) {
+            const friendUid = shareCodeSnap.data()['userUid'];
+            const userDocRef = doc(this.firestore, 'workouts', this.loadedWorkoutOwnerId()!);
+            await updateDoc(userDocRef, { sharedWith: arrayUnion(friendUid) });
+        } else {
+            alert("Share Code not found.");
+        }
+    } catch (error) {
+        console.error("Error sharing workout:", error);
+    }
   }
 
   async unshareWorkout(friendUid: string) {
@@ -138,7 +202,7 @@ export class WorkoutService {
     this.workoutList.update(list => list.filter(ex => ex.id !== id));
     this.saveWorkoutToFirestore();
   }
-
+  
   onDragStart(index: number) { this.draggedItemIndex.set(index); }
   onDrop(droppedIndex: number) {
     const draggedIndex = this.draggedItemIndex();
@@ -180,7 +244,7 @@ export class WorkoutService {
     this.timeRemaining.set(0);
     await this.releaseWakeLock();
   }
-
+  
   private tick() {
     this.timeRemaining.update(t => t - 1);
     const remaining = this.timeRemaining();
@@ -210,9 +274,9 @@ export class WorkoutService {
     }
   }
 
-  copyMyUid() {
+  copyMyShareCode() {
     if (isPlatformBrowser(this.platformId)) {
-      navigator.clipboard.writeText(this.user()?.uid || '');
+      navigator.clipboard.writeText(this.userShareCode() || '');
     }
   }
 

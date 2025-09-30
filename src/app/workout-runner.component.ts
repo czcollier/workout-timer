@@ -48,6 +48,7 @@ export class WorkoutRunnerComponent {
   readonly circumference = 2 * Math.PI * 115;
 
   constructor() {
+    // If the page is reloaded or accessed directly, and the workout isn't running, redirect away.
     if (this.service.workoutList().length === 0 || this.service.workoutState() === 'stopped') {
       this.router.navigate(['/']);
     }
@@ -69,7 +70,7 @@ export class WorkoutRunnerComponent {
   progressOffset = computed(() => {
     const progress = this.service.timeRemaining() / this.totalDuration();
     // This corrected formula ensures the ring drains in a clockwise direction.
-    return this.circumference * (progress - 1);
+    return this.circumference * (1 - progress);
   });
 
   exerciseNameColor = computed(() => {

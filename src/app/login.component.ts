@@ -1,5 +1,5 @@
 import { Component, inject, effect } from '@angular/core';
-import { Router } from '@angular/router'; // Import Router
+import { Router } from '@angular/router';
 import { WorkoutService } from './workout.service';
 
 @Component({
@@ -22,9 +22,8 @@ export class LoginComponent {
 
   constructor() {
     effect(() => {
-      // If the user is logged in, navigate away from the login page.
       if (this.service.user()) {
-        this.router.navigate(['/editor']);
+        this.router.navigate(['/']);
       }
     });
   }

@@ -23,12 +23,12 @@ import { WorkoutService } from './workout.service';
       <!-- Main Controls -->
       <div class="space-y-4">
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-          <h2 class="text-2xl font-bold mb-4 text-cyan-400">Load Workout</h2>
+          <h2 class="text-2xl font-bold mb-4 text-cyan-400">Load A Shared Workout</h2>
           <div class="flex gap-2">
-            <input #loadUidInput placeholder="Enter User ID to load workout" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400" />
-            <button (click)="loadWorkout(loadUidInput)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-lg">Load</button>
+            <input #loadCodeInput placeholder="Enter Share Code to load workout" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 uppercase" />
+            <button (click)="loadWorkout(loadCodeInput)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-lg">Load</button>
           </div>
-          @if(service.loadedWorkoutOwnerId() !== user()?.uid && user()) {
+          @if(!service.isOwner() && user()) {
             <button (click)="loadMyWorkout()" class="mt-3 text-cyan-400 hover:underline w-full text-sm">Load My Workout</button>
           }
         </div>
@@ -36,7 +36,7 @@ import { WorkoutService } from './workout.service';
         @if(service.isOwner()) {
           <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
             <a routerLink="/create" class="text-cyan-400 hover:text-cyan-300 text-lg font-semibold p-4 block w-full">
-              + Edit My Exercises
+              + Edit My Workout 
             </a>
           </div>
         }
@@ -66,7 +66,7 @@ import { WorkoutService } from './workout.service';
           </div>
         } @else {
            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
-              <p class="text-gray-400">Your workout is empty.</p>
+              <p class="text-gray-400">Your workout is empty. Go to "Edit My Workout" or load a shared workout to get started.</p>
            </div>
         }
 
@@ -78,7 +78,11 @@ import { WorkoutService } from './workout.service';
       </div>
     </div>
   `,
-  styles: [],
+  styles: [`
+    input {
+      text-transform: uppercase;
+    }
+  `],
 })
 export class WorkoutEditorComponent {
   service = inject(WorkoutService);
@@ -93,7 +97,7 @@ export class WorkoutEditorComponent {
   }
   
   loadWorkout(input: HTMLInputElement) {
-    this.service.loadWorkout(input.value);
+    this.service.loadWorkoutByShareCode(input.value);
     input.value = '';
   }
 
@@ -103,3 +107,4 @@ export class WorkoutEditorComponent {
     }
   }
 }
+
