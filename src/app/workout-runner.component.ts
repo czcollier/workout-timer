@@ -44,11 +44,10 @@ import { WorkoutService } from './workout.service';
 export class WorkoutRunnerComponent {
   service = inject(WorkoutService);
   private router = inject(Router);
-  
+
   readonly circumference = 2 * Math.PI * 115;
 
   constructor() {
-    // If the page is loaded directly without a workout running, redirect back to the editor.
     if (this.service.workoutList().length === 0 || this.service.workoutState() === 'stopped') {
       this.router.navigate(['/']);
     }
@@ -69,7 +68,7 @@ export class WorkoutRunnerComponent {
 
   progressOffset = computed(() => {
     const progress = this.service.timeRemaining() / this.totalDuration();
-    // This formula ensures the ring drains in a clockwise direction.
+    // This corrected formula ensures the ring drains in a clockwise direction.
     return this.circumference * (progress - 1);
   });
 

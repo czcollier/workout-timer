@@ -38,7 +38,6 @@ export class WorkoutService {
   currentIntervalType = signal<'exercise' | 'rest'>('exercise');
   timeRemaining = signal(0);
 
-  // This observable signals when the initial Firebase auth check is complete.
   private authStateCheckedSource = new ReplaySubject<boolean>(1);
   authStateChecked$ = this.authStateCheckedSource.asObservable();
 
@@ -58,12 +57,10 @@ export class WorkoutService {
       if (user) {
         this.loadWorkout(user.uid);
       } else {
-        // Clear all workout data on logout
         this.workoutList.set([]);
         this.sharedWith.set([]);
         this.loadedWorkoutOwnerId.set(null);
       }
-      // Signal that the check is complete. This is crucial for the APP_INITIALIZER.
       if (!this.authStateCheckedSource.closed) {
         this.authStateCheckedSource.next(true);
         this.authStateCheckedSource.complete();
@@ -77,7 +74,6 @@ export class WorkoutService {
   login() { signInWithPopup(this.auth, new GoogleAuthProvider()); }
   logout() {
     signOut(this.auth);
-    // After signing out, navigate the user to the login page.
     this.router.navigate(['/login']);
   }
 
@@ -93,7 +89,6 @@ export class WorkoutService {
         this.sharedWith.set(data.sharedWith || []);
         this.loadedWorkoutOwnerId.set(data.owner);
       } else if (trimmedId === this.user()?.uid) {
-        // This handles the case where a user is logged in but has not created a workout yet.
         this.workoutList.set([]);
         this.sharedWith.set([]);
         this.loadedWorkoutOwnerId.set(trimmedId);
@@ -107,7 +102,6 @@ export class WorkoutService {
     const workoutData: WorkoutDoc = {
       owner: this.user()!.uid,
       exercises: this.workoutList(),
-      // Ensure the owner is always in the sharedWith list
       sharedWith: Array.from(new Set([...this.sharedWith(), this.user()!.uid]))
     };
     await setDoc(userDocRef, workoutData, { merge: true });
@@ -144,7 +138,7 @@ export class WorkoutService {
     this.workoutList.update(list => list.filter(ex => ex.id !== id));
     this.saveWorkoutToFirestore();
   }
-  
+
   onDragStart(index: number) { this.draggedItemIndex.set(index); }
   onDrop(droppedIndex: number) {
     const draggedIndex = this.draggedItemIndex();
@@ -186,7 +180,7 @@ export class WorkoutService {
     this.timeRemaining.set(0);
     await this.releaseWakeLock();
   }
-  
+
   private tick() {
     this.timeRemaining.update(t => t - 1);
     const remaining = this.timeRemaining();

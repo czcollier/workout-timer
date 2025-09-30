@@ -20,67 +20,61 @@ import { WorkoutService } from './workout.service';
         </button>
       </div>
 
-      <!-- Workout Setup -->
+      <!-- Main Controls -->
       <div class="space-y-4">
-
-        <!-- Load Workout Section -->
         <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
           <h2 class="text-2xl font-bold mb-4 text-cyan-400">Load Workout</h2>
           <div class="flex gap-2">
             <input #loadUidInput placeholder="Enter User ID to load workout" class="flex-grow bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400" />
             <button (click)="loadWorkout(loadUidInput)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold p-3 rounded-lg">Load</button>
           </div>
-          @if(service.loadedWorkoutOwnerId() !== user()?.uid) {
-            <button (click)="loadMyWorkout()" class="mt-2 text-cyan-400 hover:underline w-full text-sm">Load My Workout</button>
+          @if(service.loadedWorkoutOwnerId() !== user()?.uid && user()) {
+            <button (click)="loadMyWorkout()" class="mt-3 text-cyan-400 hover:underline w-full text-sm">Load My Workout</button>
           }
         </div>
 
         @if(service.isOwner()) {
-          <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-bold mb-4 text-cyan-400">Create Your Workout</h2>
-            <form (submit)="addExercise($event, nameInput, durationInput, restInput)" class="flex flex-col gap-3">
-              <input #nameInput placeholder="Exercise Name" class="w-full bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400" required />
-              <div class="flex gap-3">
-                <input #durationInput type="number" placeholder="Duration (s)" class="w-1/2 bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400" required />
-                <input #restInput type="number" placeholder="Rest (s)" class="w-1/2 bg-gray-700 text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400" required />
-              </div>
-              <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg">Add Exercise</button>
-            </form>
+          <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
+            <a routerLink="/create" class="text-cyan-400 hover:text-cyan-300 text-lg font-semibold p-4 block w-full">
+              + Edit My Exercises
+            </a>
           </div>
         }
 
         @if(workoutList().length > 0) {
           <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-bold mb-4 text-cyan-400">Exercise List</h2>
+            <div class="flex justify-between items-center mb-4">
+               <h2 class="text-2xl font-bold text-cyan-400">
+                @if(service.isOwner()) {
+                  My Exercise List
+                } @else {
+                  Loaded Workout
+                }
+               </h2>
+               <span class="text-gray-400 text-sm">{{ workoutList().length }} exercises</span>
+            </div>
             <ul class="space-y-3">
               @for (exercise of workoutList(); track exercise.id; let i = $index) {
-                <li
-                  class="flex items-center justify-between bg-gray-700 p-4 rounded-lg transition-shadow"
-                  [class.cursor-grab]="service.isOwner()"
-                  [attr.draggable]="service.isOwner() ? 'true' : 'false'"
-                  (dragstart)="service.onDragStart(i)"
-                  (dragover)="onDragOver($event)"
-                  (drop)="service.onDrop(i)">
+                <li class="flex items-center justify-between bg-gray-700 p-4 rounded-lg">
                   <div>
                     <p class="font-semibold text-lg text-left">{{ exercise.name }}</p>
                     <p class="text-sm text-gray-400 text-left">Work: {{ exercise.duration }}s, Rest: {{ exercise.rest }}s</p>
                   </div>
-                  @if(service.isOwner()) {
-                    <button (click)="service.removeExercise(exercise.id)" class="bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
-                    </button>
-                  }
                 </li>
               }
             </ul>
           </div>
+        } @else {
+           <div class="bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
+              <p class="text-gray-400">Your workout is empty.</p>
+           </div>
         }
 
         <div class="flex justify-between items-center bg-gray-800 p-4 rounded-2xl shadow-lg">
           <a routerLink="/settings" class="text-cyan-400 hover:underline">Go to Settings & Sharing</a>
         </div>
 
-        <button (click)="startWorkout()" [disabled]="workoutList().length === 0" class="w-full mt-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg text-xl transition-transform transform hover:scale-105 shadow-lg">Start Workout</button>
+        <button (click)="startWorkout()" [disabled]="workoutList().length === 0" class="w-full mt-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg text-xl">Start Workout</button>
       </div>
     </div>
   `,
@@ -92,15 +86,7 @@ export class WorkoutEditorComponent {
 
   user = computed(() => this.service.user());
   workoutList = computed(() => this.service.workoutList());
-
-  addExercise(event: SubmitEvent, nameInput: HTMLInputElement, durationInput: HTMLInputElement, restInput: HTMLInputElement) {
-    this.service.addExercise(event, nameInput, durationInput, restInput);
-  }
   
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-  }
-
   startWorkout() {
     this.service.startWorkout();
     this.router.navigate(['/run']);

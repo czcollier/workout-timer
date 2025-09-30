@@ -4,29 +4,36 @@ import { WorkoutEditorComponent } from './workout-editor.component';
 import { WorkoutRunnerComponent } from './workout-runner.component';
 import { SettingsComponent } from './settings.component';
 import { authGuard } from './auth.guard';
-import { loginGuard } from './login.guard'; // Import the new guard
+import { loginGuard } from './login.guard';
+import { WorkoutCreatorComponent } from './workout-creator.component'; // Import the new component
 
 export const routes: Routes = [
   { 
     path: 'login', 
     component: LoginComponent, 
-    canActivate: [loginGuard] // Protect this route from logged-in users
+    canActivate: [loginGuard]
   },
   {
-    path: '',
+    path: '', // Default route
     component: WorkoutEditorComponent,
-    canActivate: [authGuard] // Protect this route from logged-out users
+    canActivate: [authGuard]
+  },
+  { 
+    path: 'create', // Add the new route
+    component: WorkoutCreatorComponent, 
+    canActivate: [authGuard]
   },
   { 
     path: 'run', 
     component: WorkoutRunnerComponent, 
-    canActivate: [authGuard] // Protect this route
+    canActivate: [authGuard]
   },
   { 
     path: 'settings', 
     component: SettingsComponent, 
-    canActivate: [authGuard] // Protect this route
+    canActivate: [authGuard]
   },
   // Redirect any unknown paths to the main page
   { path: '**', redirectTo: '' }
 ];
+
